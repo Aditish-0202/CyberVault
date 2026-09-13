@@ -1,22 +1,37 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CyberShield Security Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: devices
+    description: Device management
+  - name: alerts
+    description: Security alerts
+  - name: analytics
+    description: Analytics and metrics
+  - name: logs
+    description: System logs
+  - name: profile
+    description: User profile
+  - name: settings
+    description: Application settings
+  - name: activities
+    description: Recent activities
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +39,781 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Forgot password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: Email sent if user exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # DEVICES
+  /devices:
+    get:
+      operationId: listDevices
+      tags: [devices]
+      summary: List devices
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [online, offline, warning, critical]
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        "200":
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceListResponse"
+
+    post:
+      operationId: createDevice
+      tags: [devices]
+      summary: Create device
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceInput"
+      responses:
+        "201":
+          description: Device created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  /devices/{id}:
+    get:
+      operationId: getDevice
+      tags: [devices]
+      summary: Get device by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Device details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateDevice
+      tags: [devices]
+      summary: Update device
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceUpdate"
+      responses:
+        "200":
+          description: Device updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+    delete:
+      operationId: deleteDevice
+      tags: [devices]
+      summary: Delete device
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # ALERTS
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, high, medium, low]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, resolved, acknowledged]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertListResponse"
+
+    post:
+      operationId: createAlert
+      tags: [alerts]
+      summary: Create alert
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertInput"
+      responses:
+        "201":
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  /alerts/{id}:
+    get:
+      operationId: getAlert
+      tags: [alerts]
+      summary: Get alert by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+    patch:
+      operationId: updateAlert
+      tags: [alerts]
+      summary: Update alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlertUpdate"
+      responses:
+        "200":
+          description: Alert updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+    delete:
+      operationId: deleteAlert
+      tags: [alerts]
+      summary: Delete alert
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /alerts/{id}/resolve:
+    patch:
+      operationId: resolveAlert
+      tags: [alerts]
+      summary: Mark alert as resolved
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Alert resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Alert"
+
+  # ANALYTICS
+  /analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      tags: [analytics]
+      summary: Dashboard overview stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewStats"
+
+  /analytics/network-traffic:
+    get:
+      operationId: getNetworkTraffic
+      tags: [analytics]
+      summary: Network traffic time series
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+            default: 24h
+      responses:
+        "200":
+          description: Network traffic data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeSeriesPoint"
+
+  /analytics/threat-trends:
+    get:
+      operationId: getThreatTrends
+      tags: [analytics]
+      summary: Threat trends over time
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+            default: 30d
+      responses:
+        "200":
+          description: Threat trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ThreatTrendPoint"
+
+  /analytics/attack-distribution:
+    get:
+      operationId: getAttackDistribution
+      tags: [analytics]
+      summary: Attack type distribution
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Attack distribution
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttackDistributionItem"
+
+  /analytics/device-health:
+    get:
+      operationId: getDeviceHealth
+      tags: [analytics]
+      summary: Device health breakdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Device health data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceHealthStats"
+
+  /analytics/security-score:
+    get:
+      operationId: getSecurityScore
+      tags: [analytics]
+      summary: Security score gauge data
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Security score data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityScoreData"
+
+  /analytics/heatmap:
+    get:
+      operationId: getThreatHeatmap
+      tags: [analytics]
+      summary: Threat activity heatmap
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Heatmap data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HeatmapCell"
+
+  /analytics/risk-analysis:
+    get:
+      operationId: getRiskAnalysis
+      tags: [analytics]
+      summary: Risk analysis breakdown
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Risk analysis data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskItem"
+
+  # LOGS
+  /logs:
+    get:
+      operationId: listLogs
+      tags: [logs]
+      summary: List system logs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, error, critical]
+        - name: source
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: System logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogListResponse"
+
+  /logs/{id}:
+    get:
+      operationId: getLog
+      tags: [logs]
+      summary: Get log entry by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Log entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogEntry"
+
+  # PROFILE
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profile]
+      summary: Get user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+    patch:
+      operationId: updateProfile
+      tags: [profile]
+      summary: Update profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /profile/password:
+    patch:
+      operationId: changePassword
+      tags: [profile]
+      summary: Change password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChangeInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # SETTINGS
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get user settings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettings"
+
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettings"
+
+  # ACTIVITIES
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: List recent activities
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Recent activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+
+  /activities/system-status:
+    get:
+      operationId: getSystemStatus
+      tags: [activities]
+      summary: Get system service statuses
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: System status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SystemService"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [activities]
+      summary: List notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [activities]
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +823,632 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    # AUTH
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+
+        password:
+          type: string
+          minLength: 6
+
+    RegisterInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+
+        password:
+          type: string
+          minLength: 6
+        role:
+          type: string
+          default: analyst
+
+    ForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        department:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    # DEVICES
+    Device:
+      type: object
+      required: [id, name, ipAddress, type, status, lastSeen]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        ipAddress:
+          type: string
+        type:
+          type: string
+        os:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [online, offline, warning, critical]
+        cpuUsage:
+          type: number
+        memoryUsage:
+          type: number
+        diskUsage:
+          type: number
+        lastSeen:
+          type: string
+        location:
+          type: ["string", "null"]
+        assignedUser:
+          type: ["string", "null"]
+        riskScore:
+          type: number
+        openAlerts:
+          type: integer
+        createdAt:
+          type: string
+
+    DeviceInput:
+      type: object
+      required: [name, ipAddress, type]
+      properties:
+        name:
+          type: string
+        ipAddress:
+          type: string
+        type:
+          type: string
+        os:
+          type: string
+        location:
+          type: string
+        assignedUser:
+          type: string
+
+    DeviceUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        ipAddress:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [online, offline, warning, critical]
+        os:
+          type: string
+        location:
+          type: string
+        assignedUser:
+          type: string
+        cpuUsage:
+          type: number
+        memoryUsage:
+          type: number
+        diskUsage:
+          type: number
+
+    DeviceListResponse:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Device"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
+    # ALERTS
+    Alert:
+      type: object
+      required: [id, title, severity, status, source, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, resolved, acknowledged]
+        source:
+          type: string
+        sourceIp:
+          type: ["string", "null"]
+        targetIp:
+          type: ["string", "null"]
+        deviceId:
+          type: ["integer", "null"]
+        deviceName:
+          type: ["string", "null"]
+        attackType:
+          type: ["string", "null"]
+        mitreTactic:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AlertInput:
+      type: object
+      required: [title, severity, source]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        source:
+          type: string
+        sourceIp:
+          type: string
+        targetIp:
+          type: string
+        deviceId:
+          type: integer
+        attackType:
+          type: string
+        mitreTactic:
+          type: string
+
+    AlertUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [open, resolved, acknowledged]
+        description:
+          type: string
+
+    AlertListResponse:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Alert"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+        criticalCount:
+          type: integer
+        highCount:
+          type: integer
+        mediumCount:
+          type: integer
+        lowCount:
+          type: integer
+
+    # ANALYTICS
+    OverviewStats:
+      type: object
+      required: [totalDevices, activeThreats, securityScore, activeUsers]
+      properties:
+        totalDevices:
+          type: integer
+        onlineDevices:
+          type: integer
+        activeThreats:
+          type: integer
+        criticalAlerts:
+          type: integer
+        securityScore:
+          type: number
+        activeUsers:
+          type: integer
+        resolvedToday:
+          type: integer
+        blockedAttacks:
+          type: integer
+        devicesChange:
+          type: number
+        threatsChange:
+          type: number
+        scoreChange:
+          type: number
+        usersChange:
+          type: number
+
+    TimeSeriesPoint:
+      type: object
+      required: [time, value]
+      properties:
+        time:
+          type: string
+        value:
+          type: number
+        inbound:
+          type: number
+        outbound:
+          type: number
+
+    ThreatTrendPoint:
+      type: object
+      required: [date, critical, high, medium, low]
+      properties:
+        date:
+          type: string
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+        low:
+          type: integer
+        total:
+          type: integer
+
+    AttackDistributionItem:
+      type: object
+      required: [type, count, percentage]
+      properties:
+        type:
+          type: string
+        count:
+          type: integer
+        percentage:
+          type: number
+
+    DeviceHealthStats:
+      type: object
+      required: [healthy, warning, critical, offline]
+      properties:
+        healthy:
+          type: integer
+        warning:
+          type: integer
+        critical:
+          type: integer
+        offline:
+          type: integer
+        avgCpu:
+          type: number
+        avgMemory:
+          type: number
+        avgDisk:
+          type: number
+
+    SecurityScoreData:
+      type: object
+      required: [score, grade, factors]
+      properties:
+        score:
+          type: number
+        grade:
+          type: string
+        trend:
+          type: string
+        change:
+          type: number
+        factors:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreFactor"
+
+    ScoreFactor:
+      type: object
+      required: [name, score, weight]
+      properties:
+        name:
+          type: string
+        score:
+          type: number
+        weight:
+          type: number
+        status:
+          type: string
+
+    HeatmapCell:
+      type: object
+      required: [hour, day, value]
+      properties:
+        hour:
+          type: integer
+        day:
+          type: integer
+        value:
+          type: integer
+
+    RiskItem:
+      type: object
+      required: [category, score, impact, likelihood]
+      properties:
+        category:
+          type: string
+        score:
+          type: number
+        impact:
+          type: string
+        likelihood:
+          type: string
+        trend:
+          type: string
+
+    # LOGS
+    LogEntry:
+      type: object
+      required: [id, level, message, source, createdAt]
+      properties:
+        id:
+          type: integer
+        level:
+          type: string
+          enum: [info, warning, error, critical]
+        message:
+          type: string
+        source:
+          type: string
+        sourceIp:
+          type: ["string", "null"]
+        userId:
+          type: ["integer", "null"]
+        details:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    LogListResponse:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/LogEntry"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
+    # PROFILE
+    UserProfile:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        department:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        location:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        twoFactorEnabled:
+          type: boolean
+        lastLogin:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        department:
+          type: string
+        phone:
+          type: string
+        location:
+          type: string
+        bio:
+          type: string
+        avatarUrl:
+          type: string
+
+    PasswordChangeInput:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    # SETTINGS
+    UserSettings:
+      type: object
+      required: [id, userId]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        theme:
+          type: string
+          enum: [dark, light, system]
+        emailNotifications:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        criticalAlertEmail:
+          type: boolean
+        weeklyReport:
+          type: boolean
+        sessionTimeout:
+          type: integer
+        twoFactorEnabled:
+          type: boolean
+        language:
+          type: string
+        timezone:
+          type: string
+        apiKey:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    SettingsUpdate:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [dark, light, system]
+        emailNotifications:
+          type: boolean
+        pushNotifications:
+          type: boolean
+        criticalAlertEmail:
+          type: boolean
+        weeklyReport:
+          type: boolean
+        sessionTimeout:
+          type: integer
+        twoFactorEnabled:
+          type: boolean
+        language:
+          type: string
+        timezone:
+          type: string
+
+    # ACTIVITIES
+    Activity:
+      type: object
+      required: [id, type, message, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        message:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        userName:
+          type: ["string", "null"]
+        resourceType:
+          type: ["string", "null"]
+        resourceId:
+          type: ["integer", "null"]
+        severity:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    SystemService:
+      type: object
+      required: [name, status, uptime]
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [operational, degraded, down, maintenance]
+        uptime:
+          type: number
+        lastCheck:
+          type: string
+        responseTime:
+          type: ["integer", "null"]
+
+    Notification:
+      type: object
+      required: [id, title, message, read, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+        read:
+          type: boolean
+        severity:
+          type: ["string", "null"]
+        linkUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
