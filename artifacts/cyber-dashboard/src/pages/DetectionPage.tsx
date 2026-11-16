@@ -31,6 +31,30 @@ import {
   WifiOff,
 } from 'lucide-react';
 
+function formatModelValue(value: unknown): string {
+  if (value == null) return '—';
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'none';
+
+    return value
+      .map((item) =>
+        typeof item === 'object' && item !== null
+          ? Object.entries(item as Record<string, unknown>)
+              .map(([key, entry]) => `${key}: ${String(entry)}`)
+              .join(', ')
+          : String(item),
+      )
+      .join('; ');
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+}
+
 const SAMPLE_FLOW = {
   'Destination Port': 80,
   'Flow Duration': 1032460,
@@ -394,7 +418,7 @@ export default function DetectionPage() {
                 {Object.entries(modelInfo.data ?? {}).map(([key, value]) => (
                   <div key={key} className="flex items-start justify-between gap-4 border-b border-white/5 pb-2 last:border-0">
                     <dt className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</dt>
-                    <dd className="text-white font-mono text-right">{String(value)}</dd>
+                    <dd className="text-white font-mono text-right break-all">{formatModelValue(value)}</dd>
                   </div>
                 ))}
               </dl>
