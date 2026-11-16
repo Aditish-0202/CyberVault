@@ -1,0 +1,11 @@
+FROM node:22-bookworm-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY . .
+RUN npx --yes pnpm@10.34.9 install --frozen-lockfile --prod=false \
+ && npx --yes pnpm@10.34.9 --filter @workspace/api-server build \
+ && npx --yes pnpm@10.34.9 --filter @workspace/cyber-dashboard build
+RUN python3 -m venv /opt/ml-venv \
+ && /opt/ml-venv/bin/pip install --no-cache-dir -r ml-backend/requirements-api.txt gunicorn
+ENV NODE_ENV=production ML_SERVICE_URL=http://127.0.0.1:5000 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+CMD ["bash", "scripts/start-render.sh"]
