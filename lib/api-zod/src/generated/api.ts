@@ -774,3 +774,89 @@ export const MarkNotificationReadResponse = zod.object({
 })
 
 
+/**
+ * @summary ML service health
+ */
+export const GetMlHealthResponse = zod.object({
+  "status": zod.string(),
+  "online": zod.boolean(),
+  "service": zod.string().optional(),
+  "serviceUrl": zod.string().optional(),
+  "models_loaded": zod.boolean().optional(),
+  "missing_artifacts": zod.array(zod.string()).optional(),
+  "error": zod.string().optional()
+})
+
+
+/**
+ * @summary ML model information
+ */
+export const GetMlModelInfoResponse = zod.object({
+  "binary_model": zod.string().optional(),
+  "multiclass_model": zod.string().optional(),
+  "risk_engine": zod.string().optional(),
+  "status": zod.string().optional()
+})
+
+
+/**
+ * @summary Classify a network flow
+ */
+export const PredictThreatBody = zod.object({
+  "flow": zod.record(zod.string(), zod.unknown()).optional().describe('Raw CIC-IDS2017 flow features.')
+})
+
+export const PredictThreatResponse = zod.object({
+  "success": zod.boolean(),
+  "prediction": zod.object({
+  "threat": zod.string(),
+  "attack_type": zod.string().nullish(),
+  "confidence": zod.number(),
+  "binary_confidence": zod.number().nullish(),
+  "risk_score": zod.number(),
+  "severity": zod.string(),
+  "recommended_actions": zod.array(zod.string()),
+  "alert_id": zod.number().nullish()
+})
+})
+
+
+/**
+ * @summary List ML-generated alerts
+ */
+export const ListMlAlertsResponse = zod.object({
+  "success": zod.boolean(),
+  "count": zod.number(),
+  "alerts": zod.array(zod.object({
+  "id": zod.number(),
+  "timestamp": zod.string(),
+  "threat": zod.string(),
+  "attack_type": zod.string().nullish(),
+  "confidence": zod.number().nullish(),
+  "binary_confidence": zod.number().nullish(),
+  "risk_score": zod.number().nullish(),
+  "severity": zod.string(),
+  "recommended_actions": zod.array(zod.string()).optional(),
+  "status": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update ML alert status
+ */
+export const UpdateMlAlertStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateMlAlertStatusBody = zod.object({
+  "status": zod.enum(['NEW', 'INVESTIGATING', 'RESOLVED'])
+})
+
+export const UpdateMlAlertStatusResponse = zod.object({
+  "success": zod.boolean(),
+  "alert_id": zod.number(),
+  "status": zod.string()
+})
+
+

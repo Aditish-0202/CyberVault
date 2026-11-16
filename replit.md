@@ -4,13 +4,35 @@ An enterprise-grade security operations dashboard inspired by Microsoft Defender
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/cyber-dashboard run dev` — run the frontend (port from `$PORT`)
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/cyber-dashboard run dev` — run the frontend (port from `$PORT`, defaults to 5173 locally)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, tsx watch)
+- `python src/app.py` (inside `ml-backend/`) — run the Python ML service on port 5000
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string, `SESSION_SECRET` — JWT signing secret
+- Required env: none for local use — `.env` supplies `JWT_SECRET`; Postgres is optional (see below)
+- Local env: copy `.env.example` to `.env` in the repo root; the API server loads it automatically
+
+## Local architecture
+
+```
+Browser → Vite dev server (:5173)
+        └─ /api/*  →  Express API (:8080)  →  Postgres
+                                    └─ /api/ml/*  →  Flask ML service (:5000)  →  SQLite + Random Forest models
+```
+
+The browser only ever talks to one origin. `vite.config.ts` proxies `/api` to the
+Express server (override with `VITE_API_PROXY_TARGET`), and `artifacts/api-server/src/routes/ml.ts`
+forwards `/api/ml/*` to Flask (`ML_SERVICE_URL`, default `http://127.0.0.1:5000`).
+
+The API server uses `DATABASE_URL` when set. Otherwise it starts an embedded
+Postgres (PGlite) at `.data/pglite`, creates the schema from
+`lib/db/src/embedded-schema.ts`, and seeds demo data automatically.
+
+Trained model files live in `ml-backend/models/` and `ml-backend/dataset/processed/`
+(see `ml-backend/README.md`). The service boots even when artifacts are missing
+and reports exactly which ones are absent via `/api/ml/health`.
 
 ## Demo Credentials
 
@@ -50,6 +72,7 @@ An enterprise-grade security operations dashboard inspired by Microsoft Defender
 | `/alerts` | Alerts — severity counts, resolve inline |
 | `/analytics` | Threat heatmap + cross-referenced charts |
 | `/logs` | Terminal-aesthetic system log viewer |
+| `/detection` | Live ML detection — model status, flow analysis, ML alerts |
 | `/settings` | App settings |
 | `/profile` | User profile |
 

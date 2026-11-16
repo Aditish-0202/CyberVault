@@ -8,6 +8,7 @@ import logsRouter from "./logs";
 import profileRouter from "./profile";
 import settingsRouter from "./settings";
 import activitiesRouter from "./activities";
+import mlRouter from "./ml";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(logsRouter);
 router.use(profileRouter);
 router.use(settingsRouter);
 router.use(activitiesRouter);
+router.use(mlRouter);
 
 export default router;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Shield, LayoutDashboard, Monitor, BellRing, LineChart, FileText, Settings, UserCircle, LogOut } from 'lucide-react';
+import { Shield, LayoutDashboard, Monitor, BellRing, LineChart, BrainCircuit, FileText, Settings, UserCircle, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,6 +13,7 @@ export const Sidebar = () => {
     { name: 'Devices', href: '/devices', icon: Monitor },
     { name: 'Alerts', href: '/alerts', icon: BellRing },
     { name: 'Analytics', href: '/analytics', icon: LineChart },
+    { name: 'Detection', href: '/detection', icon: BrainCircuit },
     { name: 'Logs', href: '/logs', icon: FileText },
     { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Profile', href: '/profile', icon: UserCircle },

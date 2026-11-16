@@ -47,6 +47,13 @@ import type {
   LogListResponse,
   LoginInput,
   MessageResponse,
+  MlAlertListResponse,
+  MlAlertStatusInput,
+  MlAlertStatusResponse,
+  MlHealth,
+  MlModelInfo,
+  MlPredictInput,
+  MlPredictResponse,
   Notification,
   OverviewStats,
   PasswordChangeInput,
@@ -2750,5 +2757,379 @@ export const useMarkNotificationRead = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getMarkNotificationReadMutationOptions(options));
+    }
+
+export const getGetMlHealthUrl = () => {
+
+
+
+
+  return `/api/ml/health`
+}
+
+/**
+ * @summary ML service health
+ */
+export const getMlHealth = async ( options?: RequestInit): Promise<MlHealth> => {
+
+  return customFetch<MlHealth>(getGetMlHealthUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMlHealthQueryKey = () => {
+    return [
+    `/api/ml/health`
+    ] as const;
+    }
+
+
+export const getGetMlHealthQueryOptions = <TData = Awaited<ReturnType<typeof getMlHealth>>, TError = ErrorType<MlHealth>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMlHealth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMlHealthQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMlHealth>>> = ({ signal }) => getMlHealth({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMlHealth>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMlHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getMlHealth>>>
+export type GetMlHealthQueryError = ErrorType<MlHealth>
+
+
+/**
+ * @summary ML service health
+ */
+
+export function useGetMlHealth<TData = Awaited<ReturnType<typeof getMlHealth>>, TError = ErrorType<MlHealth>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMlHealth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMlHealthQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMlModelInfoUrl = () => {
+
+
+
+
+  return `/api/ml/model-info`
+}
+
+/**
+ * @summary ML model information
+ */
+export const getMlModelInfo = async ( options?: RequestInit): Promise<MlModelInfo> => {
+
+  return customFetch<MlModelInfo>(getGetMlModelInfoUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMlModelInfoQueryKey = () => {
+    return [
+    `/api/ml/model-info`
+    ] as const;
+    }
+
+
+export const getGetMlModelInfoQueryOptions = <TData = Awaited<ReturnType<typeof getMlModelInfo>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMlModelInfo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMlModelInfoQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMlModelInfo>>> = ({ signal }) => getMlModelInfo({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMlModelInfo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMlModelInfoQueryResult = NonNullable<Awaited<ReturnType<typeof getMlModelInfo>>>
+export type GetMlModelInfoQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary ML model information
+ */
+
+export function useGetMlModelInfo<TData = Awaited<ReturnType<typeof getMlModelInfo>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMlModelInfo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMlModelInfoQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPredictThreatUrl = () => {
+
+
+
+
+  return `/api/ml/predict`
+}
+
+/**
+ * @summary Classify a network flow
+ */
+export const predictThreat = async (mlPredictInput: MlPredictInput, options?: RequestInit): Promise<MlPredictResponse> => {
+
+  return customFetch<MlPredictResponse>(getPredictThreatUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mlPredictInput)
+  }
+);}
+
+
+
+
+
+export const getPredictThreatMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof predictThreat>>, TError,{data: BodyType<MlPredictInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof predictThreat>>, TError,{data: BodyType<MlPredictInput>}, TContext> => {
+
+const mutationKey = ['predictThreat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof predictThreat>>, {data: BodyType<MlPredictInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  predictThreat(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PredictThreatMutationResult = NonNullable<Awaited<ReturnType<typeof predictThreat>>>
+    export type PredictThreatMutationBody = BodyType<MlPredictInput>
+    export type PredictThreatMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Classify a network flow
+ */
+export const usePredictThreat = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof predictThreat>>, TError,{data: BodyType<MlPredictInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof predictThreat>>,
+        TError,
+        {data: BodyType<MlPredictInput>},
+        TContext
+      > => {
+      return useMutation(getPredictThreatMutationOptions(options));
+    }
+
+export const getListMlAlertsUrl = () => {
+
+
+
+
+  return `/api/ml/alerts`
+}
+
+/**
+ * @summary List ML-generated alerts
+ */
+export const listMlAlerts = async ( options?: RequestInit): Promise<MlAlertListResponse> => {
+
+  return customFetch<MlAlertListResponse>(getListMlAlertsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMlAlertsQueryKey = () => {
+    return [
+    `/api/ml/alerts`
+    ] as const;
+    }
+
+
+export const getListMlAlertsQueryOptions = <TData = Awaited<ReturnType<typeof listMlAlerts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMlAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMlAlertsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMlAlerts>>> = ({ signal }) => listMlAlerts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMlAlerts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMlAlertsQueryResult = NonNullable<Awaited<ReturnType<typeof listMlAlerts>>>
+export type ListMlAlertsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List ML-generated alerts
+ */
+
+export function useListMlAlerts<TData = Awaited<ReturnType<typeof listMlAlerts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMlAlerts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMlAlertsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateMlAlertStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/ml/alerts/${id}/status`
+}
+
+/**
+ * @summary Update ML alert status
+ */
+export const updateMlAlertStatus = async (id: number,
+    mlAlertStatusInput: MlAlertStatusInput, options?: RequestInit): Promise<MlAlertStatusResponse> => {
+
+  return customFetch<MlAlertStatusResponse>(getUpdateMlAlertStatusUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mlAlertStatusInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateMlAlertStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMlAlertStatus>>, TError,{id: number;data: BodyType<MlAlertStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMlAlertStatus>>, TError,{id: number;data: BodyType<MlAlertStatusInput>}, TContext> => {
+
+const mutationKey = ['updateMlAlertStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMlAlertStatus>>, {id: number;data: BodyType<MlAlertStatusInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMlAlertStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMlAlertStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateMlAlertStatus>>>
+    export type UpdateMlAlertStatusMutationBody = BodyType<MlAlertStatusInput>
+    export type UpdateMlAlertStatusMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update ML alert status
+ */
+export const useUpdateMlAlertStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMlAlertStatus>>, TError,{id: number;data: BodyType<MlAlertStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMlAlertStatus>>,
+        TError,
+        {id: number;data: BodyType<MlAlertStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMlAlertStatusMutationOptions(options));
     }
 

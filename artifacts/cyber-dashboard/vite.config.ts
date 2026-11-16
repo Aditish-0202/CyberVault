@@ -5,27 +5,18 @@ import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-const rawPort = process.env.PORT;
-
-if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
-}
-
-const port = Number(rawPort);
+const port = Number(process.env["PORT"] ?? "5173");
 
 if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
+  throw new Error(`Invalid PORT value: "${process.env["PORT"]}"`);
 }
 
-const basePath = process.env.BASE_PATH;
+// Replit injects BASE_PATH; locally the app is served from the root.
+const basePath = process.env["BASE_PATH"] ?? "/";
 
-if (!basePath) {
-  throw new Error(
-    'BASE_PATH environment variable is required but was not provided.',
-  );
-}
+// Where the browser should send `/api/*` during local development.
+const apiProxyTarget =
+  process.env["VITE_API_PROXY_TARGET"] ?? "http://127.0.0.1:8080";
 
 export default defineConfig({
   base: basePath,
@@ -69,6 +60,16 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
+    proxy: {
+      // The generated API client always calls the same origin (`/api`).
+      // Locally we forward those requests to the Express API server,
+      // which in turn proxies ML calls to the Flask service.
+      '/api': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+        ws: true,
+      },
+    },
     fs: {
       strict: true,
     },
@@ -77,5 +78,12 @@ export default defineConfig({
     port,
     host: '0.0.0.0',
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: apiProxyTarget,
+        changeOrigin: true,
+        ws: true,
+      },
+    },
   },
 });

@@ -1,4 +1,6 @@
 import os
+import threading
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -10,73 +12,161 @@ BASE_DIR = os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))
 )
 
-MODELS_DIR = os.path.join(BASE_DIR, "models")
-PROCESSED_DIR = os.path.join(BASE_DIR, "dataset", "processed")
+# Directories can be overridden for deployments where the artifacts live
+# outside the repo (e.g. a mounted volume).
+MODELS_DIR = os.environ.get(
+    "CYBERVAULT_MODELS_DIR",
+    os.path.join(BASE_DIR, "models")
+)
+
+PROCESSED_DIR = os.environ.get(
+    "CYBERVAULT_PROCESSED_DIR",
+    os.path.join(BASE_DIR, "dataset", "processed")
+)
 
 
-# Binary model
-binary_model = joblib.load(
-    os.path.join(
+# name -> (directory, filename)
+ARTIFACTS = {
+    "binary_model": (
         MODELS_DIR,
         "cybervault_random_forest.pkl"
-    )
-)
-
-binary_imputer = joblib.load(
-    os.path.join(
+    ),
+    "binary_imputer": (
         PROCESSED_DIR,
         "imputer.pkl"
-    )
-)
-
-binary_scaler = joblib.load(
-    os.path.join(
+    ),
+    "binary_scaler": (
         PROCESSED_DIR,
         "scaler.pkl"
-    )
-)
-
-binary_features = joblib.load(
-    os.path.join(
+    ),
+    "binary_features": (
         PROCESSED_DIR,
         "feature_names.pkl"
-    )
-)
-
-
-# Multiclass model
-multiclass_model = joblib.load(
-    os.path.join(
+    ),
+    "multiclass_model": (
         MODELS_DIR,
         "cybervault_multiclass_random_forest.pkl"
-    )
-)
-
-multiclass_imputer = joblib.load(
-    os.path.join(
+    ),
+    "multiclass_imputer": (
         MODELS_DIR,
         "multiclass_imputer.pkl"
-    )
-)
-
-multiclass_features = joblib.load(
-    os.path.join(
+    ),
+    "multiclass_features": (
         MODELS_DIR,
         "multiclass_feature_names.pkl"
-    )
-)
-
-label_encoder = joblib.load(
-    os.path.join(
+    ),
+    "label_encoder": (
         MODELS_DIR,
         "attack_label_encoder.pkl"
-    )
-)
+    ),
+}
+
+
+class ModelsUnavailableError(RuntimeError):
+    """Raised when the trained artifacts are missing on disk."""
+
+    def __init__(self, missing):
+        self.missing = missing
+
+        names = ", ".join(item["name"] for item in missing)
+
+        super().__init__(
+            "Trained model artifacts are missing: "
+            f"{names}. Place the .pkl files in {MODELS_DIR} "
+            f"and {PROCESSED_DIR}."
+        )
+
+
+# Loaded artifacts, populated on first prediction.
+_models = {}
+_lock = threading.Lock()
+
+
+def artifact_paths():
+    """Return the expected path of every artifact."""
+
+    return {
+        name: os.path.join(directory, filename)
+        for name, (directory, filename) in ARTIFACTS.items()
+    }
+
+
+def missing_artifacts():
+    """List artifacts that are not present on disk."""
+
+    return [
+        {"name": name, "path": path}
+        for name, path in artifact_paths().items()
+        if not os.path.isfile(path)
+    ]
+
+
+def models_available():
+    return len(missing_artifacts()) == 0
+
+
+def load_models(force=False):
+    """
+    Load every artifact once and cache the result.
+
+    Raises ModelsUnavailableError if any file is missing.
+    """
+
+    if _models and not force:
+        return _models
+
+    with _lock:
+
+        if _models and not force:
+            return _models
+
+        missing = missing_artifacts()
+
+        if missing:
+            raise ModelsUnavailableError(missing)
+
+        loaded = {
+            name: joblib.load(path)
+            for name, path in artifact_paths().items()
+        }
+
+        _models.clear()
+        _models.update(loaded)
+
+        return _models
+
+
+def model_status():
+    """Summary used by the /health and /model-info endpoints."""
+
+    missing = missing_artifacts()
+
+    return {
+        "loaded": len(missing) == 0,
+        "models_dir": MODELS_DIR,
+        "processed_dir": PROCESSED_DIR,
+        "missing": missing,
+        "artifacts": sorted(ARTIFACTS.keys()),
+    }
+
+
 # --------------------------------------------------
 # PREDICTION FUNCTION
 # --------------------------------------------------
 
 def predict_flow(flow_data):
+
+    models = load_models()
+
+    binary_model = models["binary_model"]
+    binary_imputer = models["binary_imputer"]
+    binary_scaler = models["binary_scaler"]
+    binary_features = models["binary_features"]
+
+    multiclass_model = models["multiclass_model"]
+    multiclass_imputer = models["multiclass_imputer"]
+    multiclass_features = models["multiclass_features"]
+    label_encoder = models["label_encoder"]
 
     df = flow_data.copy()
     df.columns = df.columns.str.strip()
@@ -223,6 +313,24 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("CYBERVAULT INTELLIGENT THREAT DETECTION")
     print("=" * 60)
+
+    status = model_status()
+
+    print(f"\nModels directory:    {status['models_dir']}")
+    print(f"Processed directory: {status['processed_dir']}")
+
+    if not status["loaded"]:
+
+        print("\nMissing artifacts:")
+
+        for item in status["missing"]:
+            print(f"  - {item['path']}")
+
+        print(
+            "\nDrop the trained .pkl files in place, "
+            "then run this script again."
+        )
+        raise SystemExit(1)
 
     dataset_path = os.path.join(
         BASE_DIR,

@@ -1,7 +1,11 @@
 from flask import Flask, jsonify, request
 import pandas as pd
 
-from cybervault_pipeline import predict_flow
+from cybervault_pipeline import (
+    ModelsUnavailableError,
+    model_status,
+    predict_flow
+)
 
 from database import (
     initialize_database,
@@ -29,9 +33,15 @@ initialize_database()
 @app.route("/health", methods=["GET"])
 def health():
 
+    status = model_status()
+
     return jsonify({
         "status": "online",
-        "service": "CyberVault API"
+        "service": "CyberVault API",
+        "models_loaded": status["loaded"],
+        "missing_artifacts": [
+            item["name"] for item in status["missing"]
+        ]
     })
 
 
@@ -42,11 +52,16 @@ def health():
 @app.route("/model-info", methods=["GET"])
 def model_info():
 
+    status = model_status()
+
     return jsonify({
-        "binary_model": "Random Forest",
-        "multiclass_model": "Random Forest",
+        "binary_model": "Random Forest" if status["loaded"] else "not loaded",
+        "multiclass_model": "Random Forest" if status["loaded"] else "not loaded",
         "risk_engine": "Rule-Based Risk & Severity Engine",
-        "status": "loaded"
+        "status": "loaded" if status["loaded"] else "models_missing",
+        "models_dir": status["models_dir"],
+        "processed_dir": status["processed_dir"],
+        "missing_artifacts": len(status["missing"])
     })
 
 
@@ -140,7 +155,21 @@ def predict():
         # RUN CYBERVAULT ML PIPELINE
         # ----------------------------------------------------
 
-        prediction = predict_flow(flow_df)
+        try:
+
+            prediction = predict_flow(flow_df)
+
+        except ModelsUnavailableError as e:
+
+            return jsonify({
+
+                "success": False,
+
+                "error": str(e),
+
+                "missing": e.missing
+
+            }), 503
 
 
         # ----------------------------------------------------

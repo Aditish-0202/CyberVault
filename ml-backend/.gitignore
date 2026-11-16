@@ -15,6 +15,5 @@ __pycache__/
 *.sqlite3
 
 dataset/
-models/
 
 *.log

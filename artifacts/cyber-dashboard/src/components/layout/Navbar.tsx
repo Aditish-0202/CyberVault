@@ -35,7 +35,7 @@ export const Navbar = () => {
       <div className="flex items-center gap-4 ml-4">
         <button className="relative p-2.5 text-muted-foreground hover:text-white transition-colors rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10">
           <Bell className="w-5 h-5" />
-          {notifications?.data && notifications.data.length > 0 && (
+          {notifications && notifications.length > 0 && (
             <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
           )}
         </button>

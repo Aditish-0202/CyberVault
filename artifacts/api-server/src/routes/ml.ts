@@ -1,0 +1,124 @@
+import { Router, type Response } from "express";
+import { authMiddleware } from "../middlewares/auth";
+import { ML_SERVICE_URL, MlServiceError, mlRequest } from "../lib/mlClient";
+
+const router = Router();
+
+/**
+ * Maps failures from the Python service onto a consistent JSON error shape.
+ */
+function sendMlError(res: Response, error: unknown) {
+  if (error instanceof MlServiceError) {
+    res.status(error.statusCode).json({
+      error: error.message,
+      details: error.details ?? null,
+      serviceUrl: ML_SERVICE_URL,
+    });
+    return;
+  }
+
+  res.status(500).json({
+    error: error instanceof Error ? error.message : "Unexpected ML service error",
+  });
+}
+
+// ML endpoints are used by authenticated dashboard pages only.
+router.use(authMiddleware);
+
+// GET /api/ml/health
+router.get("/ml/health", async (_req, res) => {
+  try {
+    const health = await mlRequest<{ status: string; service?: string }>(
+      "/health",
+    );
+    res.json({
+      ...health,
+      online: true,
+      serviceUrl: ML_SERVICE_URL,
+    });
+  } catch (error) {
+    if (error instanceof MlServiceError && error.statusCode === 503) {
+      res.status(503).json({
+        status: "offline",
+        online: false,
+        serviceUrl: ML_SERVICE_URL,
+        error: error.message,
+        details: error.details ?? null,
+      });
+      return;
+    }
+    sendMlError(res, error);
+  }
+});
+
+// GET /api/ml/model-info
+router.get("/ml/model-info", async (_req, res) => {
+  try {
+    const info = await mlRequest<Record<string, unknown>>("/model-info");
+    res.json(info);
+  } catch (error) {
+    sendMlError(res, error);
+  }
+});
+
+// POST /api/ml/predict
+// Accepts a raw CIC-IDS2017 flow object or { flow: {...} } and forwards it.
+router.post("/ml/predict", async (req, res) => {
+  try {
+    const prediction = await mlRequest<Record<string, unknown>>("/predict", {
+      method: "POST",
+      body: req.body,
+    });
+    res.json(prediction);
+  } catch (error) {
+    sendMlError(res, error);
+  }
+});
+
+// GET /api/ml/alerts
+router.get("/ml/alerts", async (_req, res) => {
+  try {
+    const alerts = await mlRequest<Record<string, unknown>>("/alerts");
+    res.json(alerts);
+  } catch (error) {
+    sendMlError(res, error);
+  }
+});
+
+// GET /api/ml/alerts/:id
+router.get("/ml/alerts/:id", async (req, res) => {
+  try {
+    const alert = await mlRequest<Record<string, unknown>>(
+      `/alerts/${encodeURIComponent(String(req.params["id"]))}`,
+    );
+    res.json(alert);
+  } catch (error) {
+    sendMlError(res, error);
+  }
+});
+
+// PUT /api/ml/alerts/:id/status
+router.put("/ml/alerts/:id/status", async (req, res) => {
+  const status = String(req.body?.status ?? "").toUpperCase();
+  const allowed = ["NEW", "INVESTIGATING", "RESOLVED"];
+
+  if (!allowed.includes(status)) {
+    res.status(400).json({
+      error: "Invalid status",
+      allowedStatuses: allowed,
+    });
+    return;
+  }
+
+  try {
+    const updated = await mlRequest<Record<string, unknown>>(
+      `/alerts/${encodeURIComponent(String(req.params["id"]))}/status`,
+      { method: "PUT", body: { status } },
+    );
+    res.json(updated);
+  } catch (error) {
+    sendMlError(res, error);
+  }
+});
+
+export default router;

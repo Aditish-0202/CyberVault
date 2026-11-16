@@ -1,14 +1,18 @@
 import { defineConfig } from "drizzle-kit";
 import path from "path";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
-}
+// `drizzle-kit generate` only reads the schema and does not connect, but the
+// config requires a URL. Real migrations (`push`) still need DATABASE_URL set
+// to a reachable Postgres instance.
+const url =
+  process.env.DATABASE_URL ??
+  "postgres://placeholder:placeholder@127.0.0.1:5432/placeholder";
 
 export default defineConfig({
-  schema: path.join(__dirname, "./src/schema/index.ts"),
+  schema: "./src/schema/index.ts",
+  out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url,
   },
 });

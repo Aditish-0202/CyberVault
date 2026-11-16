@@ -25,6 +25,8 @@ tags:
     description: Application settings
   - name: activities
     description: Recent activities
+  - name: ml
+    description: CyberVault ML threat detection (proxied to the Python service)
 
 paths:
   /healthz:
@@ -807,6 +809,106 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  # ML THREAT DETECTION
+  /ml/health:
+    get:
+      operationId: getMlHealth
+      tags: [ml]
+      summary: ML service health
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: ML service reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MlHealth"
+        "503":
+          description: ML service unreachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MlHealth"
+
+  /ml/model-info:
+    get:
+      operationId: getMlModelInfo
+      tags: [ml]
+      summary: ML model information
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Model information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MlModelInfo"
+
+  /ml/predict:
+    post:
+      operationId: predictThreat
+      tags: [ml]
+      summary: Classify a network flow
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MlPredictInput"
+      responses:
+        "200":
+          description: Prediction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MlPredictResponse"
+
+  /ml/alerts:
+    get:
+      operationId: listMlAlerts
+      tags: [ml]
+      summary: List ML-generated alerts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: ML alerts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MlAlertListResponse"
+
+  /ml/alerts/{id}/status:
+    put:
+      operationId: updateMlAlertStatus
+      tags: [ml]
+      summary: Update ML alert status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MlAlertStatusInput"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MlAlertStatusResponse"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1451,4 +1553,149 @@ components:
         linkUrl:
           type: ["string", "null"]
         createdAt:
+          type: string
+
+    # ---------------------------------------------------------------
+    # ML THREAT DETECTION
+    # ---------------------------------------------------------------
+
+    MlHealth:
+      type: object
+      required: [status, online]
+      properties:
+        status:
+          type: string
+        online:
+          type: boolean
+        service:
+          type: string
+        serviceUrl:
+          type: string
+        models_loaded:
+          type: boolean
+        missing_artifacts:
+          type: array
+          items:
+            type: string
+        error:
+          type: string
+
+    MlModelInfo:
+      type: object
+      properties:
+        binary_model:
+          type: string
+        multiclass_model:
+          type: string
+        risk_engine:
+          type: string
+        status:
+          type: string
+
+    MlFlow:
+      type: object
+      additionalProperties: true
+      description: Raw CIC-IDS2017 flow features.
+
+    MlPredictInput:
+      type: object
+      additionalProperties: true
+      properties:
+        flow:
+          $ref: "#/components/schemas/MlFlow"
+
+    MlPrediction:
+      type: object
+      required:
+        - threat
+        - confidence
+        - risk_score
+        - severity
+        - recommended_actions
+      properties:
+        threat:
+          type: string
+        attack_type:
+          type: ["string", "null"]
+        confidence:
+          type: number
+        binary_confidence:
+          type: ["number", "null"]
+        risk_score:
+          type: integer
+        severity:
+          type: string
+        recommended_actions:
+          type: array
+          items:
+            type: string
+        alert_id:
+          type: ["integer", "null"]
+
+    MlPredictResponse:
+      type: object
+      required: [success, prediction]
+      properties:
+        success:
+          type: boolean
+        prediction:
+          $ref: "#/components/schemas/MlPrediction"
+
+    MlAlert:
+      type: object
+      required: [id, timestamp, threat, severity, status]
+      properties:
+        id:
+          type: integer
+        timestamp:
+          type: string
+        threat:
+          type: string
+        attack_type:
+          type: ["string", "null"]
+        confidence:
+          type: ["number", "null"]
+        binary_confidence:
+          type: ["number", "null"]
+        risk_score:
+          type: ["integer", "null"]
+        severity:
+          type: string
+        recommended_actions:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+
+    MlAlertListResponse:
+      type: object
+      required: [success, count, alerts]
+      properties:
+        success:
+          type: boolean
+        count:
+          type: integer
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/MlAlert"
+
+    MlAlertStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [NEW, INVESTIGATING, RESOLVED]
+
+    MlAlertStatusResponse:
+      type: object
+      required: [success, alert_id, status]
+      properties:
+        success:
+          type: boolean
+        alert_id:
+          type: integer
+        status:
           type: string

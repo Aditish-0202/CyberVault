@@ -45,7 +45,7 @@ export default function LoginPage() {
       onError: (error) => {
         toast({
           title: "Access Denied",
-          description: error.error || "Invalid credentials provided.",
+          description: error.data?.error || "Invalid credentials provided.",
           variant: "destructive",
         });
       }

@@ -66,7 +66,7 @@ export default function RegisterPage() {
       onError: (error) => {
         toast({
           title: "Registration Failed",
-          description: error.error || "Unable to process request.",
+          description: error.data?.error || "Unable to process request.",
           variant: "destructive",
         });
       }

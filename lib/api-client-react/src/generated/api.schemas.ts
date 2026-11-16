@@ -456,6 +456,94 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface MlHealth {
+  status: string;
+  online: boolean;
+  service?: string;
+  serviceUrl?: string;
+  models_loaded?: boolean;
+  missing_artifacts?: string[];
+  error?: string;
+}
+
+export interface MlModelInfo {
+  binary_model?: string;
+  multiclass_model?: string;
+  risk_engine?: string;
+  status?: string;
+}
+
+/**
+ * Raw CIC-IDS2017 flow features.
+ */
+export interface MlFlow { [key: string]: unknown }
+
+export interface MlPredictInput {
+  flow?: MlFlow;
+  [key: string]: unknown;
+ }
+
+export interface MlPrediction {
+  threat: string;
+  /** @nullable */
+  attack_type?: string | null;
+  confidence: number;
+  /** @nullable */
+  binary_confidence?: number | null;
+  risk_score: number;
+  severity: string;
+  recommended_actions: string[];
+  /** @nullable */
+  alert_id?: number | null;
+}
+
+export interface MlPredictResponse {
+  success: boolean;
+  prediction: MlPrediction;
+}
+
+export interface MlAlert {
+  id: number;
+  timestamp: string;
+  threat: string;
+  /** @nullable */
+  attack_type?: string | null;
+  /** @nullable */
+  confidence?: number | null;
+  /** @nullable */
+  binary_confidence?: number | null;
+  /** @nullable */
+  risk_score?: number | null;
+  severity: string;
+  recommended_actions?: string[];
+  status: string;
+}
+
+export interface MlAlertListResponse {
+  success: boolean;
+  count: number;
+  alerts: MlAlert[];
+}
+
+export type MlAlertStatusInputStatus = typeof MlAlertStatusInputStatus[keyof typeof MlAlertStatusInputStatus];
+
+
+export const MlAlertStatusInputStatus = {
+  NEW: 'NEW',
+  INVESTIGATING: 'INVESTIGATING',
+  RESOLVED: 'RESOLVED',
+} as const;
+
+export interface MlAlertStatusInput {
+  status: MlAlertStatusInputStatus;
+}
+
+export interface MlAlertStatusResponse {
+  success: boolean;
+  alert_id: number;
+  status: string;
+}
+
 export type ListDevicesParams = {
 search?: string;
 status?: ListDevicesStatus;

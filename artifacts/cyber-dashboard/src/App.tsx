@@ -18,8 +18,8 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import LogsPage from './pages/LogsPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
+import DetectionPage from './pages/DetectionPage';
 import NotFoundPage from './pages/NotFoundPage';
-
 // Initialize custom fetch client interceptor
 setupApiClient();
 
@@ -52,6 +52,9 @@ function Router() {
       </Route>
       <Route path="/analytics">
         <ProtectedRoute><AnalyticsPage /></ProtectedRoute>
+      </Route>
+      <Route path="/detection">
+        <ProtectedRoute><DetectionPage /></ProtectedRoute>
       </Route>
       <Route path="/logs">
         <ProtectedRoute><LogsPage /></ProtectedRoute>
