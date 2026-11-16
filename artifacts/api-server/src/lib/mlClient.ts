@@ -8,8 +8,11 @@ import { logger } from "./logger";
  * (no CORS setup, no second base URL).
  */
 
+const mlServiceHostport = process.env["ML_SERVICE_HOSTPORT"];
+
 export const ML_SERVICE_URL = (
-  process.env["ML_SERVICE_URL"] ?? "http://127.0.0.1:5000"
+  process.env["ML_SERVICE_URL"] ??
+  (mlServiceHostport ? `http://${mlServiceHostport}` : "http://127.0.0.1:5000")
 ).replace(/\/+$/, "");
 
 const ML_TIMEOUT_MS = Number(process.env["ML_SERVICE_TIMEOUT_MS"] ?? 20000);

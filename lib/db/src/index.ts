@@ -48,7 +48,9 @@ if (connectionString) {
 
   database = pglite as unknown as NodePgDatabase<typeof schema>;
 
-  await seedDatabase(database);
+  if (process.env.NODE_ENV !== "production") {
+    await seedDatabase(database);
+  }
 
   console.info(`[db] using embedded PGlite at ${dataDir}`);
 }

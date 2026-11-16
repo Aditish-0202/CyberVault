@@ -63,7 +63,7 @@ router.post("/auth/register", async (req, res) => {
     name,
     email: email.toLowerCase(),
     passwordHash,
-    role,
+    role: process.env.NODE_ENV === "production" ? "analyst" : role,
   }).returning();
 
   // Create default settings
