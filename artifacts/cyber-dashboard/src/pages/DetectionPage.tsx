@@ -31,8 +31,14 @@ import {
   WifiOff,
 } from 'lucide-react';
 
-function formatModelValue(value: unknown): string {
+const PERCENT_KEYS = new Set(['accuracy', 'weighted_f1', 'macro_f1']);
+
+function formatModelValue(key: string, value: unknown): string {
   if (value == null) return '—';
+
+  if (typeof value === 'number' && PERCENT_KEYS.has(key)) {
+    return `${(value * 100).toFixed(2)}%`;
+  }
 
   if (Array.isArray(value)) {
     if (value.length === 0) return 'none';
@@ -418,7 +424,7 @@ export default function DetectionPage() {
                 {Object.entries(modelInfo.data ?? {}).map(([key, value]) => (
                   <div key={key} className="flex items-start justify-between gap-4 border-b border-white/5 pb-2 last:border-0">
                     <dt className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</dt>
-                    <dd className="text-white font-mono text-right break-all">{formatModelValue(value)}</dd>
+                    <dd className="text-white font-mono text-right break-all">{formatModelValue(key, value)}</dd>
                   </div>
                 ))}
               </dl>

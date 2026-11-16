@@ -58,6 +58,8 @@ def model_info():
 
     paths = artifact_paths()
 
+    metrics = status["metrics"] or {}
+
     present = {
         name: "present" if os.path.isfile(path) else "missing"
         for name, path in paths.items()
@@ -71,7 +73,11 @@ def model_info():
         "models_dir": status["models_dir"],
         "processed_dir": status["processed_dir"],
         "missing_artifacts": len(status["missing"]),
-        "derived_artifacts": status["derived"]
+        "derived_artifacts": status["derived"],
+        "accuracy": metrics.get("accuracy"),
+        "weighted_f1": metrics.get("weighted_f1"),
+        "macro_f1": metrics.get("macro_f1"),
+        "attack_classes": len(metrics.get("classes", []))
     })
 
 

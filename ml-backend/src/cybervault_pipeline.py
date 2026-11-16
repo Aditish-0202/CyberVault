@@ -79,10 +79,19 @@ class ModelsUnavailableError(RuntimeError):
 
 # Artifacts that can be rebuilt from another one. The binary and multiclass
 # models are trained on the same CIC-IDS feature set, so the binary feature
-# list is identical to the multiclass one (columns are reindexed by name).
+# list is identical to the multiclass one (columns are reindexed by name), and
+# both use median imputation over the same columns.
 DERIVED_FROM = {
     "binary_features": "multiclass_features",
+    "binary_imputer": "multiclass_imputer",
 }
+
+# Training metrics (accuracy / F1) produced by train_multiclass_model.py.
+# Purely informational, not needed to run predictions.
+RESULTS_FILE = os.path.join(
+    MODELS_DIR,
+    "multiclass_results.pkl"
+)
 
 
 # Loaded artifacts, populated on first prediction.
@@ -185,8 +194,21 @@ def model_status():
         "processed_dir": PROCESSED_DIR,
         "missing": missing,
         "derived": derived_artifacts(),
+        "metrics": model_metrics(),
         "artifacts": sorted(ARTIFACTS.keys()),
     }
+
+
+def model_metrics():
+    """Training metrics recorded by train_multiclass_model.py, if present."""
+
+    if not os.path.isfile(RESULTS_FILE):
+        return None
+
+    try:
+        return joblib.load(RESULTS_FILE)
+    except Exception:
+        return None
 
 
 # --------------------------------------------------

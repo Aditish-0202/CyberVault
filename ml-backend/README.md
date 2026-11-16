@@ -46,9 +46,9 @@ ml-backend/
 ```
 
 The binary model was trained on **standardized** features, so
-`dataset/processed/imputer.pkl` and `dataset/processed/scaler.pkl` are required
-before `/predict` can run. The feature list is optional: when `feature_names.pkl`
-is absent it is derived from `multiclass_feature_names.pkl` (same 78 CIC-IDS
+`dataset/processed/scaler.pkl` is required before `/predict` can run. The
+binary feature list and imputer are optional: when absent they are derived from
+`multiclass_feature_names.pkl` / `multiclass_imputer.pkl` (same 78 CIC-IDS
 columns; inputs are reindexed by name).
 
 The service starts even when artifacts are missing and reports exactly which
