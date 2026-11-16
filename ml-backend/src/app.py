@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, request
+import os
 import pandas as pd
 
 from cybervault_pipeline import (
     ModelsUnavailableError,
+    artifact_paths,
     model_status,
     predict_flow
 )
@@ -54,14 +56,22 @@ def model_info():
 
     status = model_status()
 
+    paths = artifact_paths()
+
+    present = {
+        name: "present" if os.path.isfile(path) else "missing"
+        for name, path in paths.items()
+    }
+
     return jsonify({
-        "binary_model": "Random Forest" if status["loaded"] else "not loaded",
-        "multiclass_model": "Random Forest" if status["loaded"] else "not loaded",
+        "binary_model": present["binary_model"],
+        "multiclass_model": present["multiclass_model"],
         "risk_engine": "Rule-Based Risk & Severity Engine",
         "status": "loaded" if status["loaded"] else "models_missing",
         "models_dir": status["models_dir"],
         "processed_dir": status["processed_dir"],
-        "missing_artifacts": len(status["missing"])
+        "missing_artifacts": len(status["missing"]),
+        "derived_artifacts": status["derived"]
     })
 
 

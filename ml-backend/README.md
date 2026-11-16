@@ -25,8 +25,9 @@ Use it only if you plan to retrain models.
 
 ## 2. Model files
 
-The trained artifacts are **not committed** (`models/` and `dataset/` are
-gitignored). Drop them in place before starting the service:
+The trained artifacts live in `ml-backend/models/` (committed) and
+`ml-backend/dataset/processed/` (gitignored, because the processed training
+arrays are large):
 
 ```
 ml-backend/
@@ -38,21 +39,28 @@ ml-backend/
 │   └── attack_label_encoder.pkl
 └── dataset/
     └── processed/
-        ├── imputer.pkl
-        ├── scaler.pkl
-        └── feature_names.pkl
+        ├── imputer.pkl                        # binary preprocessing
+        ├── scaler.pkl                         # binary preprocessing
+        └── feature_names.pkl                  # optional: derived from
+                                               # multiclass_feature_names.pkl
 ```
 
-If you trained on Replit, push them through git from there:
+The binary model was trained on **standardized** features, so
+`dataset/processed/imputer.pkl` and `dataset/processed/scaler.pkl` are required
+before `/predict` can run. The feature list is optional: when `feature_names.pkl`
+is absent it is derived from `multiclass_feature_names.pkl` (same 78 CIC-IDS
+columns; inputs are reindexed by name).
+
+The service starts even when artifacts are missing and reports exactly which
+ones through `/health` and `/model-info`. `POST /predict` answers `503` with the
+same list. Artifacts are loaded lazily on the first prediction.
+
+To rebuild the binary preprocessing artifacts from the training CSV:
 
 ```bash
-git add -f ml-backend/models ml-backend/dataset/processed
-git commit -m "Add trained model artifacts"
-git push
+cd ml-backend
+python src/preprocess_data.py
 ```
-
-Without these files `cybervault_pipeline.py` raises `FileNotFoundError` during
-import, so the service will not start.
 
 ### Retraining (optional)
 

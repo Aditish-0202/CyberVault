@@ -77,6 +77,14 @@ class ModelsUnavailableError(RuntimeError):
         )
 
 
+# Artifacts that can be rebuilt from another one. The binary and multiclass
+# models are trained on the same CIC-IDS feature set, so the binary feature
+# list is identical to the multiclass one (columns are reindexed by name).
+DERIVED_FROM = {
+    "binary_features": "multiclass_features",
+}
+
+
 # Loaded artifacts, populated on first prediction.
 _models = {}
 _lock = threading.Lock()
@@ -92,12 +100,37 @@ def artifact_paths():
 
 
 def missing_artifacts():
-    """List artifacts that are not present on disk."""
+    """List artifacts that are neither on disk nor derivable."""
+
+    paths = artifact_paths()
+
+    missing = []
+
+    for name, path in paths.items():
+
+        if os.path.isfile(path):
+            continue
+
+        source = DERIVED_FROM.get(name)
+
+        if source and os.path.isfile(paths[source]):
+            continue
+
+        missing.append({"name": name, "path": path})
+
+    return missing
+
+
+def derived_artifacts():
+    """Artifacts that will be rebuilt from another one at load time."""
+
+    paths = artifact_paths()
 
     return [
-        {"name": name, "path": path}
-        for name, path in artifact_paths().items()
-        if not os.path.isfile(path)
+        {"name": name, "from": source}
+        for name, source in DERIVED_FROM.items()
+        if not os.path.isfile(paths[name])
+        and os.path.isfile(paths[source])
     ]
 
 
@@ -128,7 +161,12 @@ def load_models(force=False):
         loaded = {
             name: joblib.load(path)
             for name, path in artifact_paths().items()
+            if os.path.isfile(path)
         }
+
+        for name, source in DERIVED_FROM.items():
+            if name not in loaded:
+                loaded[name] = loaded[source]
 
         _models.clear()
         _models.update(loaded)
@@ -146,6 +184,7 @@ def model_status():
         "models_dir": MODELS_DIR,
         "processed_dir": PROCESSED_DIR,
         "missing": missing,
+        "derived": derived_artifacts(),
         "artifacts": sorted(ARTIFACTS.keys()),
     }
 
