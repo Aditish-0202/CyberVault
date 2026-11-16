@@ -1,10 +1,9 @@
 # Sepolia evidence registry
 
-1. Compile `CyberVaultEvidence.sol` with Solidity 0.8.24 in Remix. Select Sepolia in MetaMask, connect Remix to the wallet, and deploy the contract with test ETH. The deploying wallet is the authorized writer.
-2. Set `VITE_EVIDENCE_CONTRACT_ADDRESS` to the deployed contract address in the dashboard environment. Restart Vite locally or rebuild the hosted frontend.
-3. Open Detection, run the sample analysis, then select **Anchor evidence** on the saved alert. Approve the transaction in the writer wallet. After it confirms, select **Verify evidence**.
-4. Confirm the dashboard shows the anchor time and the transaction on Sepolia Etherscan. Try anchoring another saved alert and verify each independently.
+Set `SEPOLIA_RPC_URL` on the Express API server to a Sepolia JSON-RPC endpoint. Keep it server-side. The API defaults to registry `0x25be9b00207cFe68B4c7019bF856C6d4131cDd43`. Set `EVIDENCE_CONTRACT_ADDRESS` on the API server to override it with another Sepolia deployment. Restart or redeploy the API after changing these values.
 
-The frontend computes SHA-256 over a versioned, ordered snapshot of the saved alert. Verification reloads the alert from the API, recomputes its digest, and compares it with the registry entry. Editable investigation status is excluded. The contract stores the digest and block timestamp under the event ID. Raw network traffic and full logs stay off-chain.
+Open Detection and run the sample analysis. On the saved alert, click **Anchor evidence** and approve it in MetaMask using the deploying wallet. Wait for confirmation. Then sign in to CyberVault in an incognito window and click **Verify evidence** on the same alert. It shows the integrity result, both hashes when anchored, and the block timestamp. Browser wallet access and test ETH are needed only for signing.
 
-Use one registry deployment per persistent alert database. If the database is reset or replaced, deploy a new registry so reused numeric alert IDs do not collide. The dashboard requires HTTPS or localhost for browser SHA-256. Wallet keys stay in the wallet.
+The API reloads the alert from Flask and computes the existing v1 SHA-256 evidence digest. The editable investigation status is excluded. The contract stores a digest and block timestamp under the event ID. Raw logs and complete alerts stay off-chain.
+
+Each persistent alert database needs its own registry. If the database is replaced or reset, use a fresh registry to avoid collisions from reused numeric alert IDs. To create one, compile `CyberVaultEvidence.sol` in Remix, select Sepolia via MetaMask and deploy. The deploying wallet is the authorized writer.

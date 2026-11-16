@@ -539,12 +539,7 @@ export default function DetectionPage() {
                       <option value="INVESTIGATING">INVESTIGATING</option>
                       <option value="RESOLVED">RESOLVED</option>
                     </select>
-                    <EvidenceActions refreshAlert={async () => {
-                      const fresh = await alerts.refetch({ throwOnError: true });
-                      const saved = fresh.data?.alerts.find((item) => item.id === alert.id);
-                      if (!saved) throw new Error('Saved alert could not be found.');
-                      return saved;
-                    }} />
+                    <EvidenceActions alertId={alert.id} />
                   </div>
                 ))
               )}
