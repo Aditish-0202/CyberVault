@@ -5,44 +5,20 @@ projects:
         services:
           - type: web
             name: cybervault
-            runtime: node
+            runtime: docker
+            dockerfilePath: ./Dockerfile.cybervault
             region: oregon
-            plan: 0.5c-512mb
-            buildCommand: npx --yes pnpm@10.34.9 install --frozen-lockfile --prod=false && npx --yes pnpm@10.34.9 --filter @workspace/api-server build && npx --yes pnpm@10.34.9 --filter @workspace/cyber-dashboard build
-            startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+            plan: free
             healthCheckPath: /api/healthz
-            disk:
-              name: dashboard-data
-              mountPath: /var/data
-              sizeGB: 1
             envVars:
-              - key: NODE_VERSION
-                value: 22.22.0
-              - key: NODE_ENV
-                value: production
-              - key: PGLITE_DATA_DIR
-                value: /var/data/pglite
               - key: JWT_SECRET
                 generateValue: true
-              - key: ML_SERVICE_HOSTPORT
-                fromService:
-                  type: pserv
-                  name: cybervault-ml
-                  property: hostport
-          - type: pserv
-            name: cybervault-ml
-            runtime: python
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: cybervault-db
+                  property: connectionString
+        databases:
+          - name: cybervault-db
             region: oregon
-            plan: 1c-2g
-            rootDir: ml-backend
-            buildCommand: pip install -r requirements-api.txt gunicorn
-            startCommand: gunicorn --chdir src --bind 0.0.0.0:$PORT app:app
-            disk:
-              name: alerts
-              mountPath: /var/data
-              sizeGB: 1
-            envVars:
-              - key: PORT
-                value: "10000"
-              - key: CYBERVAULT_DATABASE_DIR
-                value: /var/data
+            plan: free
+            ipAllowList: []

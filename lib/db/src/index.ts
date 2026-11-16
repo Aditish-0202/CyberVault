@@ -14,7 +14,21 @@ let database: NodePgDatabase<typeof schema>;
 
 if (connectionString) {
   // Real Postgres (Replit, Docker, a local install, ...).
-  database = drizzle(new pg.Pool({ connectionString }), { schema });
+  const pool = new pg.Pool({ connectionString });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(49872401)");
+    const result = await client.query("SELECT to_regclass('public.users') IS NOT NULL AS present");
+    if (!result.rows[0]?.present) await client.query(EMBEDDED_SCHEMA_SQL);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+  database = drizzle(pool, { schema });
   console.info("[db] using Postgres from DATABASE_URL");
 } else {
   // Local development without a Postgres server: embedded Postgres (WASM).
