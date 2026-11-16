@@ -2,6 +2,8 @@ import { Router, type Response } from "express";
 import { authMiddleware } from "../middlewares/auth";
 import { ML_SERVICE_URL, MlServiceError, mlRequest } from "../lib/mlClient";
 
+import { verifyAlertEvidence } from "../lib/evidence";
+
 const router = Router();
 
 /**
@@ -94,6 +96,36 @@ router.get("/ml/alerts/:id", async (req, res) => {
     res.json(alert);
   } catch (error) {
     sendMlError(res, error);
+  }
+});
+
+// GET /api/ml/alerts/:id/evidence
+router.get("/ml/alerts/:id/evidence", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const id = req.params["id"];
+  const alertId = Number(id);
+  if (!id || !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(alertId)) {
+    res.status(400).json({ error: "Invalid alert ID" });
+    return;
+  }
+
+  let alert: Record<string, unknown>;
+  try {
+    ({ alert } = await mlRequest<{ alert: Record<string, unknown> }>(`/alerts/${alertId}`));
+  } catch (error) {
+    sendMlError(res, error);
+    return;
+  }
+
+  if (!alert || alert.id !== alertId) {
+    res.status(502).json({ error: "ML service returned an invalid alert" });
+    return;
+  }
+
+  try {
+    res.json(await verifyAlertEvidence(alertId, alert));
+  } catch {
+    res.status(503).json({ error: "Sepolia evidence is unavailable. Try again later." });
   }
 });
 
