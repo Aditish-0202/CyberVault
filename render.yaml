@@ -8,7 +8,7 @@ projects:
             runtime: node
             region: oregon
             plan: 0.5c-512mb
-            buildCommand: npx --yes pnpm@10.34.9 install --frozen-lockfile && npx --yes pnpm@10.34.9 --filter @workspace/api-server build && npx --yes pnpm@10.34.9 --filter @workspace/cyber-dashboard build
+            buildCommand: npx --yes pnpm@10.34.9 install --frozen-lockfile --prod=false && npx --yes pnpm@10.34.9 --filter @workspace/api-server build && npx --yes pnpm@10.34.9 --filter @workspace/cyber-dashboard build
             startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
             healthCheckPath: /api/healthz
             disk:
@@ -20,8 +20,6 @@ projects:
                 value: 22.22.0
               - key: NODE_ENV
                 value: production
-              - key: PNPM_CONFIG_PROD
-                value: "false"
               - key: PGLITE_DATA_DIR
                 value: /var/data/pglite
               - key: JWT_SECRET
@@ -39,7 +37,6 @@ projects:
             rootDir: ml-backend
             buildCommand: pip install -r requirements-api.txt gunicorn
             startCommand: gunicorn --chdir src --bind 0.0.0.0:$PORT app:app
-            healthCheckPath: /health
             disk:
               name: alerts
               mountPath: /var/data
