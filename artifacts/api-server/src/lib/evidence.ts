@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+const defaultRpcUrl = "https://ethereum-sepolia-rpc.publicnode.com";
 const defaultContract = "0x25be9b00207cFe68B4c7019bF856C6d4131cDd43";
 
 async function rpc(url: string, method: string, params: unknown[]) {
@@ -18,9 +19,9 @@ async function rpc(url: string, method: string, params: unknown[]) {
 }
 
 export async function verifyAlertEvidence(alertId: number, alert: Record<string, unknown>) {
-  const url = process.env["SEPOLIA_RPC_URL"];
+  const url = process.env["SEPOLIA_RPC_URL"]?.trim() || defaultRpcUrl;
   const contractAddress = process.env["EVIDENCE_CONTRACT_ADDRESS"] || defaultContract;
-  if (!url || !/^0x[0-9a-f]{40}$/i.test(contractAddress)) {
+  if (!/^0x[0-9a-f]{40}$/i.test(contractAddress)) {
     throw new Error("Sepolia evidence is not configured");
   }
 
