@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, count, gte } from "drizzle-orm";
+import { eq, count, gte, and } from "drizzle-orm";
 import { db, devicesTable, alertsTable, usersTable } from "@workspace/db";
 import { authMiddleware } from "../middlewares/auth";
 
@@ -16,7 +16,9 @@ router.get("/analytics/overview", async (_req, res) => {
     db.select({ activeUsers: count() }).from(usersTable),
   ]);
 
-  const [{ resolvedToday }] = await db.select({ resolvedToday: count() }).from(alertsTable).where(eq(alertsTable.status, "resolved"));
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const [{ resolvedToday }] = await db.select({ resolvedToday: count() }).from(alertsTable).where(and(eq(alertsTable.status, "resolved"), gte(alertsTable.resolvedAt, today)));
 
   res.json({
     totalDevices,
@@ -35,28 +37,8 @@ router.get("/analytics/overview", async (_req, res) => {
 });
 
 // GET /api/analytics/network-traffic
-router.get("/analytics/network-traffic", (req, res) => {
-  const period = (req.query["period"] as string) || "24h";
-  const points: { time: string; value: number; inbound: number; outbound: number }[] = [];
-  const now = Date.now();
-
-  const config: Record<string, { count: number; interval: number; label: (i: number) => string }> = {
-    "1h": { count: 60, interval: 60000, label: (i) => new Date(now - (60 - i) * 60000).toISOString() },
-    "24h": { count: 24, interval: 3600000, label: (i) => new Date(now - (24 - i) * 3600000).toISOString() },
-    "7d": { count: 7, interval: 86400000, label: (i) => new Date(now - (7 - i) * 86400000).toISOString() },
-    "30d": { count: 30, interval: 86400000, label: (i) => new Date(now - (30 - i) * 86400000).toISOString() },
-  };
-  const c = config[period] || config["24h"];
-
-  let base = 1200;
-  for (let i = 0; i < c.count; i++) {
-    base += (Math.random() - 0.45) * 200;
-    base = Math.max(200, Math.min(3000, base));
-    const inbound = base * 0.6 + Math.random() * 100;
-    const outbound = base * 0.4 + Math.random() * 80;
-    points.push({ time: c.label(i), value: Math.round(base), inbound: Math.round(inbound), outbound: Math.round(outbound) });
-  }
-  res.json(points);
+router.get("/analytics/network-traffic", (_req, res) => {
+  res.json([]);
 });
 
 // GET /api/analytics/threat-trends

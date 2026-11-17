@@ -1,22 +1,19 @@
-import React, { useState } from 'react';
-import { useGetThreatHeatmap, useGetThreatTrends, useGetAttackDistribution, useGetNetworkTraffic, useGetDeviceHealth, useGetSecurityScore } from '@workspace/api-client-react';
+import React from 'react';
+import { useGetThreatHeatmap, useGetThreatTrends, useGetAttackDistribution, useGetDeviceHealth, useGetAnalyticsOverview } from '@workspace/api-client-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ThreatHeatmap } from '@/components/charts/ThreatHeatmap';
 import { ThreatTrendsChart } from '@/components/charts/ThreatTrendsChart';
 import { AttackDistributionChart } from '@/components/charts/AttackDistributionChart';
-import { NetworkTrafficChart } from '@/components/charts/NetworkTrafficChart';
 import { DeviceHealthChart } from '@/components/charts/DeviceHealthChart';
-import { SecurityScoreGauge } from '@/components/charts/SecurityScoreGauge';
+import { SecurityPosture } from '@/components/shared/SecurityPosture';
 import { Activity, AlertTriangle, ShieldCheck, Target, Radio, Globe } from 'lucide-react';
 
 export default function AnalyticsPage() {
-  const [period, setPeriod] = useState('7d');
   const { data: heatmapData, isLoading: heatmapLoading, isError: heatmapError } = useGetThreatHeatmap();
   const { data: threatTrends, isLoading: trendsLoading, isError: trendsError } = useGetThreatTrends({ period: '30d' });
   const { data: attackDistribution, isLoading: attackLoading, isError: attackError } = useGetAttackDistribution();
-  const { data: networkTraffic, isLoading: networkLoading, isError: networkError } = useGetNetworkTraffic({ period });
   const { data: deviceHealth, isLoading: healthLoading, isError: healthError } = useGetDeviceHealth();
-  const { data: scoreData, isLoading: scoreLoading, isError: scoreError } = useGetSecurityScore();
+  const { data: overview, isLoading: scoreLoading, isError: scoreError } = useGetSecurityScore();
 
   return (
     <AppLayout>
@@ -29,7 +26,7 @@ export default function AnalyticsPage() {
 
         </div>
 
-        {(heatmapError || trendsError || attackError || networkError || healthError || scoreError) && (
+        {(heatmapError || trendsError || attackError || healthError || scoreError) && (
           <p role="alert" className="text-sm text-amber-400">Some analytics could not load. Refresh to try again.</p>
         )}
 
@@ -69,17 +66,10 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold flex items-center">
                 <Globe className="w-5 h-5 mr-2 text-blue-400" />
-                Network Throughput (Simulated)
+                Network Throughput
               </h3>
-              <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-primary/10">
-                {['1h', '24h', '7d', '30d'].map(option => (
-                  <button type="button" key={option} onClick={() => setPeriod(option)} aria-pressed={option === period} className={`px-2 py-1 text-xs font-bold rounded ${option === period ? 'bg-primary text-white' : 'text-muted-foreground hover:text-white'}`}>
-                    {option.toUpperCase()}
-                  </button>
-                ))}
-              </div>
             </div>
-            <NetworkTrafficChart data={networkTraffic} isLoading={networkLoading} />
+            <p className="text-sm text-muted-foreground">No network collector connected. Traffic measurements are unavailable.</p>
           </div>
           
           <div className="glass-card p-6">
@@ -98,34 +88,7 @@ export default function AnalyticsPage() {
             Security Posture Breakdown
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            <div className="md:col-span-1">
-              <SecurityScoreGauge data={scoreData} isLoading={scoreLoading} />
-            </div>
-            
-            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {scoreLoading ? (
-                Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 bg-primary/10 animate-pulse rounded-xl"></div>)
-              ) : scoreData?.factors?.map((factor, i) => (
-                <div key={i} className="p-4 rounded-xl bg-black/20 border border-primary/10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold text-sm">{factor.name}</span>
-                    <span className="font-mono font-bold text-primary">{factor.score}/100</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden mb-2">
-                    <div 
-                      className={`h-full ${factor.score > 80 ? 'bg-green-500' : factor.score > 50 ? 'bg-amber-500' : 'bg-red-500'}`} 
-                      style={{ width: `${factor.score}%` }} 
-                    />
-                  </div>
-                  <div className="text-xs text-muted-foreground flex justify-between">
-                    <span>Weight: {factor.weight}%</span>
-                    <span className={factor.status === 'optimal' ? 'text-green-500' : 'text-amber-500'}>{factor.status || 'Active'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <SecurityPosture data={overview} isLoading={scoreLoading} />
         </div>
       </div>
     </AppLayout>

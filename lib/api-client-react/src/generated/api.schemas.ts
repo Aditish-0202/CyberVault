@@ -437,7 +437,7 @@ export const SystemServiceStatus = {
 export interface SystemService {
   name: string;
   status: SystemServiceStatus;
-  uptime: number;
+  uptime?: number;
   lastCheck?: string;
   /** @nullable */
   responseTime?: number | null;

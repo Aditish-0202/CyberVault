@@ -1520,7 +1520,7 @@ components:
 
     SystemService:
       type: object
-      required: [name, status, uptime]
+      required: [name, status]
       properties:
         name:
           type: string

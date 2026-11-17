@@ -1,27 +1,24 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGetAnalyticsOverview, useGetNetworkTraffic, useGetAttackDistribution, useGetThreatTrends, useGetSecurityScore, useListAlerts, useListActivities, useGetSystemStatus } from '@workspace/api-client-react';
+import { useGetAnalyticsOverview, useGetAttackDistribution, useGetThreatTrends, useListAlerts, useListActivities, useGetSystemStatus } from '@workspace/api-client-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatCard } from '@/components/shared/StatCard';
 import { LoadingSkeleton, CardSkeleton } from '@/components/shared/LoadingSkeleton';
 import { SeverityBadge } from '@/components/shared/SeverityBadge';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { NetworkTrafficChart } from '@/components/charts/NetworkTrafficChart';
 import { AttackDistributionChart } from '@/components/charts/AttackDistributionChart';
 import { ThreatTrendsChart } from '@/components/charts/ThreatTrendsChart';
-import { SecurityScoreGauge } from '@/components/charts/SecurityScoreGauge';
+import { SecurityPosture } from '@/components/shared/SecurityPosture';
 import { Monitor, ShieldAlert, Users, Activity, Clock, Server, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function DashboardPage() {
   const { data: overview, isLoading: overviewLoading } = useGetAnalyticsOverview();
-  const { data: networkTraffic, isLoading: networkLoading } = useGetNetworkTraffic({ period: '24h' });
   const { data: attackDist, isLoading: attackLoading } = useGetAttackDistribution();
   const { data: threatTrends, isLoading: threatsLoading } = useGetThreatTrends({ period: '30d' });
-  const { data: securityScore, isLoading: scoreLoading } = useGetSecurityScore();
   const { data: recentAlerts, isLoading: alertsLoading } = useListAlerts({ limit: 5 });
   const { data: recentActivities, isLoading: activitiesLoading } = useListActivities({ limit: 8 });
-  const { data: systemStatus, isLoading: systemLoading } = useGetSystemStatus();
+  const { data: systemStatus, isLoading: systemLoading } = useGetSystemStatus({ query: { refetchInterval: 30_000 } });
 
   return (
     <AppLayout>
@@ -29,7 +26,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight">Command Center</h1>
-            <p className="text-muted-foreground mt-1">Real-time threat monitoring and system status.</p>
+            <p className="text-muted-foreground mt-1">Saved threat detections and service status.</p>
           </div>
         </div>
 
@@ -43,27 +40,26 @@ export default function DashboardPage() {
                 title="Total Devices" 
                 value={overview?.totalDevices || 0} 
                 icon={Monitor} 
-                trend={overview?.devicesChange || 0} 
-                trendLabel="vs last week"
+
               />
               <StatCard 
                 title="Active Threats" 
                 value={overview?.activeThreats || 0} 
                 icon={ShieldAlert} 
-                trend={overview?.threatsChange || 0}
+
                 alert={(overview?.activeThreats || 0) > 0}
               />
               <StatCard 
-                title="Security Score" 
-                value={`${overview?.securityScore || 0}/100`} 
+                title="Critical Alerts" 
+                value={overview?.criticalAlerts ?? "—"} 
                 icon={Activity} 
-                trend={overview?.scoreChange || 0}
+
               />
               <StatCard 
                 title="Active Users" 
                 value={overview?.activeUsers || 0} 
                 icon={Users} 
-                trend={overview?.usersChange || 0}
+
               />
             </>
           )}
@@ -76,9 +72,9 @@ export default function DashboardPage() {
             <div className="glass-card p-6">
               <h3 className="text-lg font-bold mb-6 flex items-center">
                 <Activity className="w-5 h-5 mr-2 text-primary" />
-                Network Traffic (24h)
+                Network Traffic
               </h3>
-              <NetworkTrafficChart data={networkTraffic} isLoading={networkLoading} />
+              <p className="text-sm text-muted-foreground">No network collector connected. Traffic measurements are unavailable.</p>
             </div>
             
             <div className="glass-card p-6">
@@ -105,7 +101,7 @@ export default function DashboardPage() {
                 <ShieldAlert className="w-5 h-5 mr-2 text-primary" />
                 Overall Security Posture
               </h3>
-              <SecurityScoreGauge data={securityScore} isLoading={scoreLoading} />
+              <SecurityPosture data={overview} isLoading={overviewLoading} />
             </div>
           </div>
         </div>
@@ -194,7 +190,7 @@ export default function DashboardPage() {
                       <Server className="w-4 h-4 text-muted-foreground mr-3" />
                       <div>
                         <p className="text-sm font-medium text-white">{service.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono mt-0.5">Uptime: {service.uptime}%</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{service.responseTime == null ? 'Health request failed' : `${service.responseTime} ms response`}</p>
                       </div>
                     </div>
                     <StatusBadge status={service.status} />

@@ -1,7 +1,9 @@
 import { Router } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { db, activitiesTable, notificationsTable } from "@workspace/db";
 import { authMiddleware, type AuthRequest } from "../middlewares/auth";
+
+import { mlRequest } from "../lib/mlClient";
 
 const router = Router();
 router.use(authMiddleware);
@@ -18,18 +20,30 @@ router.get("/activities", async (req: AuthRequest, res) => {
 });
 
 // GET /api/activities/system-status
-router.get("/activities/system-status", (_req, res) => {
-  const now = new Date().toISOString();
-  res.json([
-    { name: "Threat Detection Engine", status: "operational", uptime: 99.97, lastCheck: now, responseTime: 12 },
-    { name: "Firewall Service", status: "operational", uptime: 99.99, lastCheck: now, responseTime: 3 },
-    { name: "SIEM Integration", status: "operational", uptime: 99.82, lastCheck: now, responseTime: 28 },
-    { name: "Endpoint Agent (EDR)", status: "degraded", uptime: 97.34, lastCheck: now, responseTime: 145 },
-    { name: "Vulnerability Scanner", status: "operational", uptime: 99.41, lastCheck: now, responseTime: 67 },
-    { name: "Log Aggregator", status: "operational", uptime: 99.95, lastCheck: now, responseTime: 8 },
-    { name: "Identity & Access Mgmt", status: "operational", uptime: 99.88, lastCheck: now, responseTime: 21 },
-    { name: "Backup & Recovery", status: "maintenance", uptime: 98.12, lastCheck: now, responseTime: null },
+router.get("/activities/system-status", async (_req, res) => {
+  async function check(name: string, probe: () => Promise<"operational" | "degraded" | "down">) {
+    const start = performance.now();
+    try {
+      const status = await probe();
+      return { name, status, lastCheck: new Date().toISOString(), responseTime: Math.round(performance.now() - start) };
+    } catch {
+      return { name, status: "down", lastCheck: new Date().toISOString(), responseTime: null };
+    }
+  }
+
+  const services = await Promise.all([
+    check("Application API", async () => "operational"),
+    check("Database", async () => {
+      await db.execute(sql`SELECT 1`);
+      return "operational";
+    }),
+    check("Threat Detection Engine", async () => {
+      const health = await mlRequest<{ status?: string; models_loaded?: boolean }>("/health");
+      if (health.status !== "online") return "down";
+      return health.models_loaded === true ? "operational" : "degraded";
+    }),
   ]);
+  res.set("Cache-Control", "no-store").json(services);
 });
 
 // GET /api/notifications
