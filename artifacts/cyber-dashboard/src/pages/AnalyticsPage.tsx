@@ -13,7 +13,7 @@ export default function AnalyticsPage() {
   const { data: threatTrends, isLoading: trendsLoading, isError: trendsError } = useGetThreatTrends({ period: '30d' });
   const { data: attackDistribution, isLoading: attackLoading, isError: attackError } = useGetAttackDistribution();
   const { data: deviceHealth, isLoading: healthLoading, isError: healthError } = useGetDeviceHealth();
-  const { data: overview, isLoading: scoreLoading, isError: scoreError } = useGetSecurityScore();
+  const { data: overview, isLoading: scoreLoading, isError: scoreError } = useGetAnalyticsOverview();
 
   return (
     <AppLayout>
