@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGetAnalyticsOverview, useGetAttackDistribution, useGetThreatTrends, useListAlerts, useListActivities, useGetSystemStatus } from '@workspace/api-client-react';
+import { useGetAnalyticsOverview, useGetAttackDistribution, useGetThreatTrends, useListAlerts, useListActivities, getGetSystemStatusQueryKey, useGetSystemStatus } from '@workspace/api-client-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatCard } from '@/components/shared/StatCard';
 import { LoadingSkeleton, CardSkeleton } from '@/components/shared/LoadingSkeleton';
@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const { data: threatTrends, isLoading: threatsLoading } = useGetThreatTrends({ period: '30d' });
   const { data: recentAlerts, isLoading: alertsLoading } = useListAlerts({ limit: 5 });
   const { data: recentActivities, isLoading: activitiesLoading } = useListActivities({ limit: 8 });
-  const { data: systemStatus, isLoading: systemLoading } = useGetSystemStatus({ query: { refetchInterval: 30_000 } });
+  const { data: systemStatus, isLoading: systemLoading } = useGetSystemStatus({ query: { queryKey: getGetSystemStatusQueryKey(), refetchInterval: 30_000 } });
 
   return (
     <AppLayout>
