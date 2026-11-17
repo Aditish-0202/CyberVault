@@ -2,9 +2,9 @@ import { LoadingSkeleton } from './LoadingSkeleton';
 
 interface PostureData {
   activeThreats: number;
-  criticalAlerts: number;
-  resolvedToday: number;
-  onlineDevices: number;
+  criticalAlerts?: number;
+  resolvedToday?: number;
+  onlineDevices?: number;
   totalDevices: number;
 }
 
@@ -14,9 +14,9 @@ export function SecurityPosture({ data, isLoading }: { data?: PostureData; isLoa
 
   const metrics = [
     ['Open threats', data.activeThreats],
-    ['Critical alerts', data.criticalAlerts],
-    ['Alerts resolved today (UTC)', data.resolvedToday],
-    ['Registered devices online', data.totalDevices ? `${data.onlineDevices} / ${data.totalDevices}` : 'No devices registered'],
+    ['Critical alerts', data.criticalAlerts ?? 'Unavailable'],
+    ['Alerts resolved today (UTC)', data.resolvedToday ?? 'Unavailable'],
+    ['Registered devices online', data.totalDevices ? `${data.onlineDevices ?? '—'} / ${data.totalDevices}` : 'No devices registered'],
   ];
 
   return (
