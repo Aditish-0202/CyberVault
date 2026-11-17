@@ -144,16 +144,18 @@ router.get("/analytics/security-score", async (_req, res) => {
 });
 
 // GET /api/analytics/heatmap
-router.get("/analytics/heatmap", (_req, res) => {
-  const cells = [];
-  for (let day = 0; day < 7; day++) {
-    for (let hour = 0; hour < 24; hour++) {
-      const isBusinessHour = hour >= 9 && hour <= 17;
-      const isWeekend = day === 0 || day === 6;
-      let baseValue = isWeekend ? 5 : isBusinessHour ? 25 : 10;
-      baseValue += Math.floor(Math.random() * 20);
-      cells.push({ hour, day, value: baseValue });
-    }
+router.get("/analytics/heatmap", async (_req, res) => {
+  const from = new Date();
+  from.setUTCHours(0, 0, 0, 0);
+  from.setUTCDate(from.getUTCDate() - 6);
+  const alerts = await db.select({ time: alertsTable.createdAt })
+    .from(alertsTable).where(gte(alertsTable.createdAt, from));
+  const cells = Array.from({ length: 168 }, (_, index) => ({
+    day: Math.floor(index / 24), hour: index % 24, value: 0,
+  }));
+  for (const { time } of alerts) {
+    const cell = cells[time.getUTCDay() * 24 + time.getUTCHours()];
+    cell.value++;
   }
   res.json(cells);
 });
